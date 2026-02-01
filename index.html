@@ -112,14 +112,13 @@
     100%{transform:translateY(-120vh) scale(1.35) rotate(22deg); opacity:0;}
   }
 
-  #confetti{ position:fixed; inset:0; z-index:50; pointer-events:none; }
+  #confetti{ position:fixed; inset:0; z-index:150; pointer-events:none; }
 
   #musicOverlay{
     position:fixed; inset:0;
     background:rgba(0,0,0,.55);
     display:flex; align-items:center; justify-content:center;
     z-index:100; padding:24px;
-    pointer-events:auto;
   }
 
   .overlayCard{
@@ -132,7 +131,6 @@
     text-align:center;
     color:#fff;
     box-shadow:0 18px 45px rgba(0,0,0,.25);
-    pointer-events:auto;
   }
 
   .overlayCard h2{ margin:0 0 10px; font-size:20px; }
@@ -146,7 +144,6 @@
     color:#fff;
     font-weight:700;
     box-shadow:0 12px 28px rgba(0,0,0,.25);
-    pointer-events:auto;
   }
 
   #finalScreen{
@@ -176,7 +173,7 @@
   <canvas id="confetti"></canvas>
 
   <audio id="bgm" preload="auto" loop playsinline>
-    <source src="./song.mp3" type="audio/mpeg">
+    <source src="up.mp3" type="audio/mp3">
   </audio>
 
   <h1 id="mainTitle">💖 Susy, ¿Quieres ser mi San Valentín? 💖</h1>
@@ -220,7 +217,20 @@
   const startMusicBtn = document.getElementById("startMusicBtn");
   const bgm = document.getElementById("bgm");
 
+  const confettiCanvas = document.getElementById("confetti");
+  const ctx = confettiCanvas.getContext("2d");
+  let confettiPieces = [];
+  let confettiAnim = null;
+  let confettiEndAt = 0;
+
   bgm.volume = 0.25;
+
+  function resizeConfetti(){
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
+  }
+  resizeConfetti();
+  window.addEventListener("resize", resizeConfetti);
 
   function showToast(msg){
     toast.textContent = msg;
@@ -288,29 +298,86 @@
     heartsContainer.appendChild(heart);
     setTimeout(() => heart.remove(), 9000);
   }
-
   setInterval(spawnHeart, 260);
 
-  async function playMusic(){
+  const confettiColors = ["#ff2d55","#ff5f8a","#ffd166","#06d6a0","#4d96ff","#ffffff"];
+
+  function makeConfettiPiece(cx, cy){
+    const angle = rand(0, Math.PI * 2);
+    const speed = rand(7, 14);
+    return {
+      x: cx,
+      y: cy,
+      w: rand(6, 12),
+      h: rand(10, 18),
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - rand(2, 6),
+      rot: rand(0, Math.PI * 2),
+      vr: rand(-0.22, 0.22),
+      color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+      life: rand(70, 110)
+    };
+  }
+
+  function explodeConfetti(x, y){
+    resizeConfetti();
+    confettiPieces = [];
+    const count = 260;
+    for(let i=0;i<count;i++) confettiPieces.push(makeConfettiPiece(x, y));
+    confettiEndAt = performance.now() + 2600;
+    if(confettiAnim) cancelAnimationFrame(confettiAnim);
+    confettiLoop();
+  }
+
+  function confettiLoop(){
+    ctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+
+    for(const p of confettiPieces){
+      p.vx *= 0.985;
+      p.vy = p.vy * 0.985 + 0.35;
+
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vr;
+      p.life -= 1;
+
+      if(p.life <= 0){
+        p.y = confettiCanvas.height + 100;
+      }
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.globalAlpha = Math.max(0, Math.min(1, p.life / 110));
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      ctx.restore();
+    }
+
+    if(performance.now() < confettiEndAt){
+      confettiAnim = requestAnimationFrame(confettiLoop);
+    }else{
+      ctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+      confettiAnim = null;
+    }
+  }
+
+  startMusicBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
     try{
+      bgm.currentTime = 0;
       await bgm.play();
       musicOverlay.style.display = "none";
     }catch{
       showToast("No se pudo reproducir");
     }
-  }
-
-  startMusicBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    playMusic();
-  });
-
-  musicOverlay.addEventListener("click", (e) => {
-    if(e.target === startMusicBtn) return;
-    playMusic();
   });
 
   yesButton.addEventListener("click", () => {
+    const rect = yesButton.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    explodeConfetti(x, y);
     setTimeout(() => {
       mainTitle.style.display = "none";
       buttonsArea.style.display = "none";
