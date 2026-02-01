@@ -190,7 +190,7 @@
   <div id="musicOverlay">
     <div class="overlayCard">
       <h2>🎶 Música 🎶</h2>
-      <button id="startMusicBtn" type="button">Toca la pantalla para activar</button>
+      <button id="startMusicBtn" type="button">Toca para Activar</button>
     </div>
   </div>
 
@@ -225,6 +225,8 @@
   let confettiEndAt = 0;
 
   bgm.volume = 0.25;
+
+  let musicStarted = false;
 
   function resizeConfetti(){
     confettiCanvas.width = window.innerWidth;
@@ -360,9 +362,10 @@
   }
 
   async function startMusic(){
+    if(musicStarted) return;
     try{
-      bgm.currentTime = 0;
       await bgm.play();
+      musicStarted = true;
       musicOverlay.style.display = "none";
     }catch{
       showToast("No se pudo reproducir");
