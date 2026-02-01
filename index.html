@@ -47,6 +47,7 @@
     transition: transform .15s ease, box-shadow .15s ease, padding .15s ease;
     user-select:none;
     -webkit-tap-highlight-color:transparent;
+    touch-action: manipulation;
   }
 
   #yes{
@@ -92,7 +93,7 @@
     opacity:0;
     pointer-events:none;
     transition:opacity .2s ease;
-    z-index:20;
+    z-index:20000;
   }
   #toast.show{opacity:1;}
 
@@ -112,13 +113,14 @@
     100%{transform:translateY(-120vh) scale(1.35) rotate(22deg); opacity:0;}
   }
 
-  #confetti{ position:fixed; inset:0; z-index:150; pointer-events:none; }
+  #confetti{ position:fixed; inset:0; z-index:50; pointer-events:none; }
 
   #musicOverlay{
     position:fixed; inset:0;
     background:rgba(0,0,0,.55);
     display:flex; align-items:center; justify-content:center;
-    z-index:100; padding:24px;
+    z-index:9999; padding:24px;
+    pointer-events:auto;
   }
 
   .overlayCard{
@@ -131,6 +133,7 @@
     text-align:center;
     color:#fff;
     box-shadow:0 18px 45px rgba(0,0,0,.25);
+    pointer-events:auto;
   }
 
   .overlayCard h2{ margin:0 0 10px; font-size:20px; }
@@ -144,6 +147,10 @@
     color:#fff;
     font-weight:700;
     box-shadow:0 12px 28px rgba(0,0,0,.25);
+    pointer-events:auto;
+    position:relative;
+    z-index:10000;
+    touch-action: manipulation;
   }
 
   #finalScreen{
@@ -173,7 +180,7 @@
   <canvas id="confetti"></canvas>
 
   <audio id="bgm" preload="auto" loop playsinline>
-    <source src="up.mp3" type="audio/mp3">
+    <source src="up.mp3" type="audio/mpeg">
   </audio>
 
   <h1 id="mainTitle">💖 Susy, ¿Quieres ser mi San Valentín? 💖</h1>
@@ -304,7 +311,7 @@
 
   function makeConfettiPiece(cx, cy){
     const angle = rand(0, Math.PI * 2);
-    const speed = rand(7, 14);
+    const speed = rand(8, 15);
     return {
       x: cx,
       y: cy,
@@ -315,14 +322,14 @@
       rot: rand(0, Math.PI * 2),
       vr: rand(-0.22, 0.22),
       color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
-      life: rand(70, 110)
+      life: rand(70, 115)
     };
   }
 
   function explodeConfetti(x, y){
     resizeConfetti();
     confettiPieces = [];
-    const count = 260;
+    const count = 280;
     for(let i=0;i<count;i++) confettiPieces.push(makeConfettiPiece(x, y));
     confettiEndAt = performance.now() + 2600;
     if(confettiAnim) cancelAnimationFrame(confettiAnim);
@@ -341,14 +348,10 @@
       p.rot += p.vr;
       p.life -= 1;
 
-      if(p.life <= 0){
-        p.y = confettiCanvas.height + 100;
-      }
-
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.rot);
-      ctx.globalAlpha = Math.max(0, Math.min(1, p.life / 110));
+      ctx.globalAlpha = Math.max(0, Math.min(1, p.life / 115));
       ctx.fillStyle = p.color;
       ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
       ctx.restore();
@@ -362,8 +365,7 @@
     }
   }
 
-  startMusicBtn.addEventListener("click", async (e) => {
-    e.preventDefault();
+  async function tryPlay(){
     try{
       bgm.currentTime = 0;
       await bgm.play();
@@ -371,13 +373,17 @@
     }catch{
       showToast("No se pudo reproducir");
     }
+  }
+
+  startMusicBtn.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    tryPlay();
   });
 
   yesButton.addEventListener("click", () => {
     const rect = yesButton.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-    explodeConfetti(x, y);
+    explodeConfetti(rect.left + rect.width/2, rect.top + rect.height/2);
     setTimeout(() => {
       mainTitle.style.display = "none";
       buttonsArea.style.display = "none";
