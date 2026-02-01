@@ -176,7 +176,7 @@
   <canvas id="confetti"></canvas>
 
   <audio id="bgm" preload="auto" loop playsinline>
-    <source src="Married%20Life%20-%20UP.m4a" type="audio/mp4">
+    <source src="./song.mp3" type="audio/mpeg">
   </audio>
 
   <h1 id="mainTitle">💖 Susy, ¿Quieres ser mi San Valentín? 💖</h1>
@@ -291,40 +291,24 @@
 
   setInterval(spawnHeart, 260);
 
-  function hideOverlay(){
-    musicOverlay.style.display = "none";
-  }
-
-  async function startAudio(){
-    bgm.currentTime = 0;
-    await bgm.play();
-    hideOverlay();
-  }
-
-  startMusicBtn.addEventListener("click", async (e) => {
-    e.preventDefault();
+  async function playMusic(){
     try{
-      await startAudio();
+      await bgm.play();
+      musicOverlay.style.display = "none";
     }catch{
       showToast("No se pudo reproducir");
     }
+  }
+
+  startMusicBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    playMusic();
   });
 
-  document.addEventListener("click", async () => {
-    if(musicOverlay.style.display === "none") return;
-    try{
-      await bgm.play();
-      hideOverlay();
-    }catch{}
-  }, { once:true });
-
-  document.addEventListener("touchstart", async () => {
-    if(musicOverlay.style.display === "none") return;
-    try{
-      await bgm.play();
-      hideOverlay();
-    }catch{}
-  }, { once:true, passive:true });
+  musicOverlay.addEventListener("click", (e) => {
+    if(e.target === startMusicBtn) return;
+    playMusic();
+  });
 
   yesButton.addEventListener("click", () => {
     setTimeout(() => {
